@@ -9,9 +9,7 @@ RUN rpm-ostree install \
 # Configure akmods signing key paths
 COPY etc/rpm/macros.kmodtool /etc/rpm/macros.kmodtool
 
-# Install all packages except akmod-nvidia (its post-install scriptlet
-# tries to build the kmod as root, which akmods rejects, causing the
-# entire rpm-ostree transaction to roll back)
+# Install non-NVIDIA packages via rpm-ostree
 RUN rpm-ostree install \
         akmods \
         gnome-shell-extension-gsconnect \
@@ -20,29 +18,29 @@ RUN rpm-ostree install \
         gstreamer1-plugins-bad-freeworld \
         gstreamer1-plugins-ugly \
         libavcodec-freeworld \
-        libva-nvidia-driver \
         nvidia-container-toolkit \
-        nvidia-settings \
         podlet \
         steam-devices \
         tmux \
         xcb-util-cursor \
         xcb-util-cursor-devel \
-        xorg-x11-drv-nvidia \
-        xorg-x11-drv-nvidia-cuda \
         zsh \
     && rpm-ostree cleanup -m
 
-# Install akmod-nvidia and build the NVIDIA kernel module:
-# 1. Download the akmod-nvidia RPM without installing
-# 2. Extract it manually (just a src.rpm in /usr/src/akmods/)
-# 3. Build the kmod as the akmods user with signing keys
+# Install NVIDIA driver packages. These depend on nvidia-kmod (provided by
+# akmod-nvidia), whose post-install scriptlet fails as root. We download all
+# packages and install with --noscripts, then build the kmod manually.
 RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_key.der \
     --mount=type=secret,id=signing_privkey,dst=/etc/pki/akmods-keys/private/private_key.priv \
-    dnf download --destdir=/tmp akmod-nvidia \
-    && rpm -ivh --noscripts /tmp/akmod-nvidia-*.rpm \
+    dnf download --resolve --destdir=/tmp/nvidia-rpms \
+        akmod-nvidia \
+        xorg-x11-drv-nvidia \
+        xorg-x11-drv-nvidia-cuda \
+        nvidia-settings \
+        libva-nvidia-driver \
+    && rpm -ivh --noscripts /tmp/nvidia-rpms/*.rpm \
     && runuser -u akmods -- akmods --force \
-    && rm -f /tmp/akmod-nvidia-*.rpm
+    && rm -rf /tmp/nvidia-rpms
 
 # Copy NVIDIA container support systemd units
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
