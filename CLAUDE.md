@@ -29,6 +29,10 @@ podman build \
 
 From inside a toolbox, use `podman --remote build` with keys copied to `/tmp/` (see README.md).
 
+## Package Management
+
+When helping the user install packages on the base OS (via `rpm-ostree install`), always recommend also adding them to the Containerfile so they're baked into the next image build. Layered packages work but add runtime overhead and can conflict with future image updates.
+
 ## Git Workflow
 
 - All changes via PR to `main` (squash merge only)
