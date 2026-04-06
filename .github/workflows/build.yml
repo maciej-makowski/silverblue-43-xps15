@@ -1,0 +1,40 @@
+name: Build Silverblue Image
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Prepare signing keys
+        run: |
+          mkdir -p /tmp/secrets
+          echo "${{ secrets.AKMODS_PUBKEY }}" | base64 -d > /tmp/secrets/signing_pubkey
+          echo "${{ secrets.AKMODS_PRIVKEY }}" | base64 -d > /tmp/secrets/signing_privkey
+
+      - name: Build image
+        run: |
+          podman build \
+            --secret id=signing_pubkey,src=/tmp/secrets/signing_pubkey \
+            --secret id=signing_privkey,src=/tmp/secrets/signing_privkey \
+            -t ghcr.io/${{ github.repository }}:latest \
+            .
+
+      - name: Push image
+        run: podman push ghcr.io/${{ github.repository }}:latest
+
+      - name: Clean up secrets
+        if: always()
+        run: rm -rf /tmp/secrets
