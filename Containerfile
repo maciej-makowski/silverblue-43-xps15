@@ -81,4 +81,5 @@ COPY opt/systemd/nvidia-container-fix.sh /opt/systemd/nvidia-container-fix.sh
 # Enable the NVIDIA services
 RUN chmod +x /opt/systemd/nvidia-container-fix.sh \
     && systemctl enable nvidia-container-fix.service \
+    && systemctl enable nvidia-cdi-generate.service \
     && systemctl enable nvidia-cdi-generate.timer
