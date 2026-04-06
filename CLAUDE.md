@@ -29,6 +29,11 @@ podman build \
 
 From inside a toolbox, use `podman --remote build` with keys copied to `/tmp/` (see README.md).
 
+**Before building locally**, check that `/tmp/signing_pubkey` and `/tmp/signing_privkey` exist. These are lost on reboot. If missing, ask the user to run:
+```bash
+! sudo cp /etc/pki/akmods/certs/public_key.der /tmp/signing_pubkey && sudo cp /etc/pki/akmods/private/private_key.priv /tmp/signing_privkey && sudo chmod 644 /tmp/signing_pubkey /tmp/signing_privkey
+```
+
 ## Package Management
 
 When helping the user install packages on the base OS (via `rpm-ostree install`), always recommend also adding them to the Containerfile so they're baked into the next image build. Layered packages work but add runtime overhead and can conflict with future image updates.
