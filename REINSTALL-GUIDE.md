@@ -7,6 +7,7 @@ Full reinstall of Fedora Silverblue with LUKS encryption and custom image restor
 Before reinstalling, ensure you have:
 
 - [ ] Home directory backup on an external drive (`home-backup-YYYY-MM-DD.tar.zst`)
+- [ ] Claude Code data backup on an external drive (`claude-backup.tar.zst`)
 - [ ] This repo cloned or accessible (contains restore scripts and image config)
 - [ ] Fedora Silverblue USB installer (download from https://fedoraproject.org/silverblue/)
 - [ ] LUKS passphrase chosen
@@ -77,7 +78,16 @@ sudo tar xf /run/media/$USER/<drive>/home-backup-YYYY-MM-DD.tar.zst --use-compre
 sudo chown -R cfiet:cfiet /home/cfiet
 ```
 
-## Step 6: Restore flatpaks and toolboxes
+## Step 6: Restore Claude Code data
+
+```bash
+cd /home/cfiet
+tar xf /run/media/$USER/<drive>/claude-backup.tar.zst --use-compress-program='zstd -d'
+```
+
+This restores `~/.claude/` (settings, conversations) and `~/.local/share/claude/` (session data).
+
+## Step 7: Restore flatpaks and toolboxes
 
 Clone this repo (or copy from the external drive):
 
@@ -87,7 +97,7 @@ cd silverblue-43-xps15
 ./restore/restore.sh
 ```
 
-## Step 7: Configure toolbox
+## Step 8: Configure toolbox
 
 ```bash
 toolbox run git config --global user.name "Maciej Makowski"
@@ -95,7 +105,7 @@ toolbox run git config --global user.email "makowski@maciej.dev"
 toolbox run gh auth login
 ```
 
-## Step 8: Enable automatic updates
+## Step 9: Enable automatic updates
 
 ```bash
 sudo tee /etc/rpm-ostreed.conf <<'EOF'
@@ -105,7 +115,7 @@ EOF
 sudo systemctl enable --now rpm-ostreed-automatic.timer
 ```
 
-## Step 9: Enrol signing keys (if Secure Boot)
+## Step 10: Enrol signing keys (if Secure Boot)
 
 If you need to rebuild the image locally or the MOK is not enrolled:
 
