@@ -1,0 +1,28 @@
+# Silverblue 43 Custom Image
+
+This repo builds a custom Fedora Silverblue 43 OCI image for a Dell XPS 15.
+
+- Base: `quay.io/fedora/fedora-silverblue:43`
+- Registry: `ghcr.io/maciej-makowski/silverblue-43-xps15`
+- Rebase command: `rpm-ostree rebase ostree-unverified-registry:ghcr.io/maciej-makowski/silverblue-43-xps15:latest`
+- Rollback refspec: `fedora:fedora/43/x86_64/silverblue`
+- CI: GitHub Actions rebuilds daily at 05:00 UTC and on push to `main`
+
+## Signing Keys
+
+NVIDIA kernel modules are signed for Secure Boot. The signing keys are stored as GitHub secrets (`AKMODS_PUBKEY`, `AKMODS_PRIVKEY`) and injected at build time via `--mount=type=secret`. They never persist in image layers.
+
+## Building Locally
+
+```bash
+podman build \
+  --secret id=signing_pubkey,src=/etc/pki/akmods-keys/certs/public_key.der \
+  --secret id=signing_privkey,src=/etc/pki/akmods-keys/private/private_key.priv \
+  -t silverblue-43-xps15:latest .
+```
+
+## Git Workflow
+
+- All changes via PR to `main` (squash merge only)
+- Use `toolbox run git` for git commands (git is configured in toolbox, not on host)
+- Use `toolbox run gh` for GitHub CLI commands
