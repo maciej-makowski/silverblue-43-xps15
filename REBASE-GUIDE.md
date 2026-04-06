@@ -26,6 +26,20 @@ fedora:fedora/43/x86_64/silverblue
 
 ## Rebase to the custom image
 
+If rebasing from stock Silverblue with RPM Fusion and akmods-keys installed as
+local/layered packages, they must be removed since they're now in the base image:
+
+```bash
+rpm-ostree rebase ostree-unverified-registry:ghcr.io/maciej-makowski/silverblue-43-xps15:latest \
+    --uninstall=rpmfusion-free-release \
+    --uninstall=rpmfusion-nonfree-release \
+    --uninstall=akmods-keys \
+    --uninstall=libva-nvidia-driver-0.0.14-3.fc43.x86_64
+systemctl reboot
+```
+
+If you don't have those packages layered (e.g. fresh Silverblue install), the simple form works:
+
 ```bash
 rpm-ostree rebase ostree-unverified-registry:ghcr.io/maciej-makowski/silverblue-43-xps15:latest
 systemctl reboot
