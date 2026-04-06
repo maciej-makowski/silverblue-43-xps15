@@ -40,7 +40,9 @@ RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_
         nvidia-settings \
         libva-nvidia-driver \
     && rpm -ivh --noscripts --nodeps /tmp/nvidia-rpms/*.rpm \
+    && KERNEL_VERSION=$(ls /usr/src/kernels/ | head -1) \
     && runuser -u akmods -- akmodsbuild \
+        --kernels "$KERNEL_VERSION" \
         --outputdir /tmp/nvidia-kmod \
         /usr/src/akmods/nvidia-kmod.latest \
     && rpm -ivh --noscripts --nodeps /tmp/nvidia-kmod/*.rpm \
