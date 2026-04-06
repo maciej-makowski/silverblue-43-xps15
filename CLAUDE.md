@@ -8,9 +8,15 @@ This repo builds a custom Fedora Silverblue 43 OCI image for a Dell XPS 15.
 - Rollback refspec: `fedora:fedora/43/x86_64/silverblue`
 - CI: GitHub Actions rebuilds daily at 05:00 UTC and on push to `main`
 
+## Build Architecture
+
+Multi-stage Containerfile:
+- **Stage 1 (`kmod-builder`):** Builds and signs the NVIDIA kernel module using `akmodsbuild` as the `akmods` user. This is needed because `akmods` refuses to run as root, causing `rpm-ostree install` to fail in container builds.
+- **Stage 2 (final):** Installs all packages, copies the pre-built kmod RPM from stage 1, installs NVIDIA drivers via `rpm --noscripts --nodeps`. No build tooling in the final image.
+
 ## Signing Keys
 
-NVIDIA kernel modules are signed for Secure Boot. The signing keys are stored as GitHub secrets (`AKMODS_PUBKEY`, `AKMODS_PRIVKEY`) and injected at build time via `--mount=type=secret`. They never persist in image layers.
+NVIDIA kernel modules are signed for Secure Boot. Keys are stored as base64-encoded GitHub secrets (`AKMODS_PUBKEY`, `AKMODS_PRIVKEY`). At build time, they're mounted via `--secret`, copied to paths readable by the `akmods` user for module signing, then removed. The private key never persists in any image layer.
 
 ## Building Locally
 
@@ -20,6 +26,8 @@ podman build \
   --secret id=signing_privkey,src=/etc/pki/akmods-keys/private/private_key.priv \
   -t silverblue-43-xps15:latest .
 ```
+
+From inside a toolbox, use `podman --remote build` with keys copied to `/tmp/` (see README.md).
 
 ## Git Workflow
 
