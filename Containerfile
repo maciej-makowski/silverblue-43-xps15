@@ -64,6 +64,9 @@ RUN dnf download --resolve --destdir=/tmp/nvidia-rpms \
         xorg-x11-drv-nvidia-cuda \
         nvidia-settings \
         libva-nvidia-driver \
+    && rm -f /tmp/nvidia-rpms/kernel-devel*.rpm \
+            /tmp/nvidia-rpms/kernel-devel-matched*.rpm \
+            /tmp/nvidia-rpms/xorg-x11-drv-nvidia-kmodsrc*.rpm \
     && rpm -ivh --noscripts --nodeps /tmp/nvidia-kmod/*.rpm /tmp/nvidia-rpms/*.rpm \
     && rm -rf /tmp/nvidia-rpms /tmp/nvidia-kmod \
        /var/cache/libdnf5 /usr/src/kernels
