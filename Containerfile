@@ -41,6 +41,7 @@ RUN rpm-ostree install \
 RUN rpm-ostree install \
         gnome-shell-extension-appindicator \
         gnome-shell-extension-gsconnect \
+        gnome-tweaks \
         gstreamer-plugins-espeak \
         gstreamer1-plugin-openh264 \
         gstreamer1-plugins-bad-freeworld \
