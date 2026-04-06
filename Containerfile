@@ -39,6 +39,7 @@ RUN rpm-ostree install \
 
 # Install layered packages (no akmods/akmod-nvidia — kmod comes from builder)
 RUN rpm-ostree install \
+        gnome-shell-extension-appindicator \
         gnome-shell-extension-gsconnect \
         gstreamer-plugins-espeak \
         gstreamer1-plugin-openh264 \
