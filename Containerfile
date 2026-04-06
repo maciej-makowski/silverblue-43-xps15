@@ -65,7 +65,8 @@ RUN dnf download --resolve --destdir=/tmp/nvidia-rpms \
         nvidia-settings \
         libva-nvidia-driver \
     && rpm -ivh --noscripts --nodeps /tmp/nvidia-kmod/*.rpm /tmp/nvidia-rpms/*.rpm \
-    && rm -rf /tmp/nvidia-rpms /tmp/nvidia-kmod
+    && rm -rf /tmp/nvidia-rpms /tmp/nvidia-kmod \
+       /var/cache/libdnf5 /usr/src/kernels
 
 # Copy NVIDIA container support systemd units
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
