@@ -2,8 +2,8 @@ FROM quay.io/fedora/fedora-silverblue:43
 
 # Install RPM Fusion repositories
 RUN rpm-ostree install \
-        https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-43.noarch.rpm \
-        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-43.noarch.rpm \
+        https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-43.noarch.rpm \
+        https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-43.noarch.rpm \
     && rpm-ostree cleanup -m
 
 # Configure akmods signing key paths
