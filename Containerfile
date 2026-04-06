@@ -1,3 +1,34 @@
+# --- Builder stage: compile and sign the NVIDIA kernel module ---
+FROM quay.io/fedora/fedora-silverblue:43 AS kmod-builder
+
+# Install RPM Fusion (nonfree needed for akmod-nvidia)
+RUN rpm-ostree install \
+        https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-43.noarch.rpm \
+        https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-43.noarch.rpm \
+    && rpm-ostree cleanup -m
+
+# Install akmods toolchain and NVIDIA kmod source
+COPY etc/rpm/macros.kmodtool /etc/rpm/macros.kmodtool
+RUN rpm-ostree install akmods akmod-nvidia \
+    && rpm-ostree cleanup -m \
+    || true
+
+# Build the kmod RPM as the akmods user with signing keys
+RUN --mount=type=secret,id=signing_pubkey,dst=/tmp/signing_pubkey \
+    --mount=type=secret,id=signing_privkey,dst=/tmp/signing_privkey \
+    mkdir -p /etc/pki/akmods-keys/certs /etc/pki/akmods-keys/private /tmp/nvidia-kmod \
+    && cp /tmp/signing_pubkey /etc/pki/akmods-keys/certs/public_key.der \
+    && cp /tmp/signing_privkey /etc/pki/akmods-keys/private/private_key.priv \
+    && chmod 644 /etc/pki/akmods-keys/certs/public_key.der \
+    && chmod 644 /etc/pki/akmods-keys/private/private_key.priv \
+    && chown akmods:akmods /tmp/nvidia-kmod \
+    && KERNEL_VERSION=$(ls /usr/src/kernels/ | head -1) \
+    && runuser -u akmods -- akmodsbuild \
+        --kernels "$KERNEL_VERSION" \
+        --outputdir /tmp/nvidia-kmod \
+        /usr/src/akmods/nvidia-kmod.latest
+
+# --- Final stage: the actual Silverblue image ---
 FROM quay.io/fedora/fedora-silverblue:43
 
 # Install RPM Fusion repositories
@@ -6,12 +37,8 @@ RUN rpm-ostree install \
         https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-43.noarch.rpm \
     && rpm-ostree cleanup -m
 
-# Configure akmods signing key paths
-COPY etc/rpm/macros.kmodtool /etc/rpm/macros.kmodtool
-
-# Install non-NVIDIA packages via rpm-ostree
+# Install layered packages (no akmods/akmod-nvidia — kmod comes from builder)
 RUN rpm-ostree install \
-        akmods \
         gnome-shell-extension-gsconnect \
         gstreamer-plugins-espeak \
         gstreamer1-plugin-openh264 \
@@ -27,33 +54,18 @@ RUN rpm-ostree install \
         zsh \
     && rpm-ostree cleanup -m
 
-# Install NVIDIA driver packages. These depend on nvidia-kmod (provided by
-# akmod-nvidia), whose post-install scriptlet fails as root. We download all
-# packages and install with --noscripts to skip the scriptlet, then build
-# the kmod RPM as the akmods user using akmodsbuild, and install it.
-RUN --mount=type=secret,id=signing_pubkey,dst=/tmp/signing_pubkey \
-    --mount=type=secret,id=signing_privkey,dst=/tmp/signing_privkey \
-    dnf download --resolve --destdir=/tmp/nvidia-rpms \
-        akmod-nvidia \
+# Install NVIDIA driver packages and the pre-built kmod from the builder.
+# We use dnf download + rpm because rpm-ostree install triggers the akmods
+# scriptlet which fails in a container. The kmod RPM satisfies the
+# nvidia-kmod dependency that xorg-x11-drv-nvidia requires.
+COPY --from=kmod-builder /tmp/nvidia-kmod /tmp/nvidia-kmod
+RUN dnf download --resolve --destdir=/tmp/nvidia-rpms \
         xorg-x11-drv-nvidia \
         xorg-x11-drv-nvidia-cuda \
         nvidia-settings \
         libva-nvidia-driver \
-    && rpm -ivh --noscripts --nodeps /tmp/nvidia-rpms/*.rpm \
-    && mkdir -p /etc/pki/akmods-keys/certs /etc/pki/akmods-keys/private /tmp/nvidia-kmod \
-    && cp /tmp/signing_pubkey /etc/pki/akmods-keys/certs/public_key.der \
-    && cp /tmp/signing_privkey /etc/pki/akmods-keys/private/private_key.priv \
-    && chmod 644 /etc/pki/akmods-keys/certs/public_key.der \
-    && chmod 644 /etc/pki/akmods-keys/private/private_key.priv \
-    && chown -R akmods:akmods /tmp/nvidia-kmod \
-    && KERNEL_VERSION=$(ls /usr/src/kernels/ | head -1) \
-    && runuser -u akmods -- akmodsbuild \
-        --kernels "$KERNEL_VERSION" \
-        --outputdir /tmp/nvidia-kmod \
-        /usr/src/akmods/nvidia-kmod.latest \
-    && rpm -ivh --noscripts --nodeps /tmp/nvidia-kmod/*.rpm \
-    && rm -rf /tmp/nvidia-rpms /tmp/nvidia-kmod \
-       /etc/pki/akmods-keys/private/private_key.priv
+    && rpm -ivh --noscripts --nodeps /tmp/nvidia-kmod/*.rpm /tmp/nvidia-rpms/*.rpm \
+    && rm -rf /tmp/nvidia-rpms /tmp/nvidia-kmod
 
 # Copy NVIDIA container support systemd units
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
