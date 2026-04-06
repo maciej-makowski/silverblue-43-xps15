@@ -29,7 +29,8 @@ RUN rpm-ostree install \
 
 # Install NVIDIA driver packages. These depend on nvidia-kmod (provided by
 # akmod-nvidia), whose post-install scriptlet fails as root. We download all
-# packages and install with --noscripts, then build the kmod manually.
+# packages and install with --noscripts to skip the scriptlet, then build
+# the kmod RPM as the akmods user using akmodsbuild, and install it.
 RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_key.der \
     --mount=type=secret,id=signing_privkey,dst=/etc/pki/akmods-keys/private/private_key.priv \
     dnf download --resolve --destdir=/tmp/nvidia-rpms \
@@ -39,8 +40,11 @@ RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_
         nvidia-settings \
         libva-nvidia-driver \
     && rpm -ivh --noscripts --nodeps /tmp/nvidia-rpms/*.rpm \
-    && runuser -u akmods -- akmods --force \
-    && rm -rf /tmp/nvidia-rpms
+    && runuser -u akmods -- akmodsbuild \
+        --outputdir /tmp/nvidia-kmod \
+        /usr/src/akmods/nvidia-kmod.latest \
+    && rpm -ivh --noscripts --nodeps /tmp/nvidia-kmod/*.rpm \
+    && rm -rf /tmp/nvidia-rpms /tmp/nvidia-kmod
 
 # Copy NVIDIA container support systemd units
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
