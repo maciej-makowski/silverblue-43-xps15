@@ -9,11 +9,10 @@ RUN rpm-ostree install \
 # Configure akmods signing key paths
 COPY etc/rpm/macros.kmodtool /etc/rpm/macros.kmodtool
 
-# Install layered packages with signing keys mounted (not persisted in image)
-RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_key.der \
-    --mount=type=secret,id=signing_privkey,dst=/etc/pki/akmods-keys/private/private_key.priv \
-    rpm-ostree install \
-        akmod-nvidia \
+# Install all packages except akmod-nvidia (its post-install scriptlet
+# tries to build the kmod as root, which akmods rejects, causing the
+# entire rpm-ostree transaction to roll back)
+RUN rpm-ostree install \
         akmods \
         gnome-shell-extension-gsconnect \
         gstreamer-plugins-espeak \
@@ -34,10 +33,16 @@ RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_
         zsh \
     && rpm-ostree cleanup -m
 
-# Build NVIDIA kernel module (akmods refuses to run as root)
+# Install akmod-nvidia and build the NVIDIA kernel module:
+# 1. Download the akmod-nvidia RPM without installing
+# 2. Extract it manually (just a src.rpm in /usr/src/akmods/)
+# 3. Build the kmod as the akmods user with signing keys
 RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_key.der \
     --mount=type=secret,id=signing_privkey,dst=/etc/pki/akmods-keys/private/private_key.priv \
-    runuser -u akmods -- akmods --force
+    dnf download --destdir=/tmp akmod-nvidia \
+    && rpm -ivh --noscripts /tmp/akmod-nvidia-*.rpm \
+    && runuser -u akmods -- akmods --force \
+    && rm -f /tmp/akmod-nvidia-*.rpm
 
 # Copy NVIDIA container support systemd units
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
