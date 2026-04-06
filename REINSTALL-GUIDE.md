@@ -23,17 +23,39 @@ Before reinstalling, ensure you have:
    - LUKS-encrypted volume group with:
      - `/` — 70–100 GB, ext4
      - `/home` — remainder of disk, ext4
-     - `swap` — 8–16 GB (optional, recommended for hibernate)
+     - `swap` — 8–16 GB (optional)
 6. Complete the install and reboot
 
-## Step 2: Rebase to custom image
+## Step 2: Enrol TPM2 for auto-unlock (optional)
+
+Skip the LUKS password prompt on boot by enrolling the TPM2 chip. Your password remains as a fallback.
+
+Find your LUKS partition:
+
+```bash
+lsblk -f | grep crypto_LUKS
+```
+
+Enrol TPM2:
+
+```bash
+sudo systemd-cryptenroll /dev/<luks-partition> --tpm2-device=auto
+```
+
+Reboot to verify it unlocks without a password. If it falls back to password (e.g. after a BIOS update or Secure Boot change), the TPM2 state has changed — re-enrol with:
+
+```bash
+sudo systemd-cryptenroll /dev/<luks-partition> --wipe-slot=tpm2 --tpm2-device=auto
+```
+
+## Step 3: Rebase to custom image
 
 ```bash
 rpm-ostree rebase ostree-unverified-registry:ghcr.io/maciej-makowski/silverblue-43-xps15:latest
 systemctl reboot
 ```
 
-## Step 3: Verify NVIDIA
+## Step 4: Verify NVIDIA
 
 ```bash
 nvidia-smi
@@ -45,7 +67,7 @@ If it fails, check `dmesg | grep nvidia`. If the CDI spec is stale:
 sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
 ```
 
-## Step 4: Restore home directory
+## Step 5: Restore home directory
 
 Mount the external drive and extract the backup:
 
@@ -55,7 +77,7 @@ sudo tar xf /run/media/$USER/<drive>/home-backup-YYYY-MM-DD.tar.zst --use-compre
 sudo chown -R cfiet:cfiet /home/cfiet
 ```
 
-## Step 5: Restore flatpaks and toolboxes
+## Step 6: Restore flatpaks and toolboxes
 
 Clone this repo (or copy from the external drive):
 
@@ -65,7 +87,7 @@ cd silverblue-43-xps15
 ./restore/restore.sh
 ```
 
-## Step 6: Configure toolbox
+## Step 7: Configure toolbox
 
 ```bash
 toolbox run git config --global user.name "Maciej Makowski"
@@ -73,7 +95,7 @@ toolbox run git config --global user.email "makowski@maciej.dev"
 toolbox run gh auth login
 ```
 
-## Step 7: Enable automatic updates
+## Step 8: Enable automatic updates
 
 ```bash
 sudo tee /etc/rpm-ostreed.conf <<'EOF'
@@ -83,7 +105,7 @@ EOF
 sudo systemctl enable --now rpm-ostreed-automatic.timer
 ```
 
-## Step 8: Enrol signing keys (if Secure Boot)
+## Step 9: Enrol signing keys (if Secure Boot)
 
 If you need to rebuild the image locally or the MOK is not enrolled:
 
