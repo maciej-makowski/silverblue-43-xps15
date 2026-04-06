@@ -53,6 +53,29 @@ rpm-ostree status
 
 The origin should show `ostree-unverified-registry:ghcr.io/maciej-makowski/silverblue-43-xps15:latest`.
 
+### Verify NVIDIA driver
+
+```bash
+nvidia-smi
+```
+
+Should show your GPU model and driver version. If it fails with "couldn't communicate with the NVIDIA driver", the kmod may not have loaded — check `dmesg | grep nvidia`.
+
+### Verify GPU access inside containers
+
+```bash
+# If ollama is configured as a systemd container:
+systemctl --user status ollama.service
+podman logs ollama 2>&1 | grep -i gpu
+```
+
+The logs should show the GPU being detected. If the container fails with "cannot stat libEGL_nvidia.so", the CDI spec needs regenerating:
+
+```bash
+sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+systemctl --user restart ollama.service
+```
+
 ## Rolling back
 
 ### Option A: Select previous deployment at boot

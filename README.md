@@ -18,7 +18,8 @@ Custom Fedora Silverblue 43 OCI image for Dell XPS 15 with NVIDIA GPU support.
 Custom systemd units are baked into the image:
 
 - **nvidia-container-fix.service** — Relabels `/dev/nvidia*` with `container_file_t` SELinux context on boot so containers can access the GPU
-- **nvidia-cdi-generate.timer** — Regenerates the NVIDIA CDI spec (`/etc/cdi/nvidia.yaml`) on boot and daily
+- **nvidia-cdi-generate.service** — Regenerates the NVIDIA CDI spec (`/etc/cdi/nvidia.yaml`) on every boot
+- **nvidia-cdi-generate.timer** — Refreshes the CDI spec daily
 
 ## Build Architecture
 
@@ -54,8 +55,8 @@ Requires the akmods signing keys accessible on the host:
 
 ```bash
 podman build \
-  --secret id=signing_pubkey,src=/etc/pki/akmods-keys/certs/public_key.der \
-  --secret id=signing_privkey,src=/etc/pki/akmods-keys/private/private_key.priv \
+  --secret id=signing_pubkey,src=/etc/pki/akmods/certs/public_key.der \
+  --secret id=signing_privkey,src=/etc/pki/akmods/private/private_key.priv \
   -t silverblue-43-xps15:latest .
 ```
 
@@ -63,8 +64,8 @@ If running from inside a toolbox:
 
 ```bash
 # Copy keys to a readable location first
-sudo cp /etc/pki/akmods-keys/certs/public_key.der /tmp/signing_pubkey
-sudo cp /etc/pki/akmods-keys/private/private_key.priv /tmp/signing_privkey
+sudo cp /etc/pki/akmods/certs/public_key.der /tmp/signing_pubkey
+sudo cp /etc/pki/akmods/private/private_key.priv /tmp/signing_privkey
 sudo chmod 644 /tmp/signing_pubkey /tmp/signing_privkey
 
 podman --remote build \
@@ -75,7 +76,7 @@ podman --remote build \
 
 ## CI
 
-GitHub Actions rebuilds the image daily at 05:00 UTC and on every push to `main`, then pushes to `ghcr.io/maciej-makowski/silverblue-43-xps15:latest`. Pull requests trigger a build (without push) to validate changes.
+GitHub Actions rebuilds the image weekly (Sunday 05:00 UTC) and on every push to `main`, then pushes to `ghcr.io/maciej-makowski/silverblue-43-xps15:latest` and a date-tagged version (e.g. `:2026-04-06`). The 4 most recent versions are kept; older ones are automatically deleted. Pull requests trigger a build (without push) to validate changes.
 
 Signing keys are stored as GitHub secrets (`AKMODS_PUBKEY`, `AKMODS_PRIVKEY`), base64-encoded.
 
@@ -90,7 +91,7 @@ The NVIDIA kernel modules must be signed for Secure Boot. Keys are generated on 
 3. Reboot and accept the key in the MOK manager
 4. Upload new keys to GitHub secrets:
    ```bash
-   sudo base64 -w0 /etc/pki/akmods-keys/certs/public_key.der | gh secret set AKMODS_PUBKEY --repo maciej-makowski/silverblue-43-xps15
-   sudo base64 -w0 /etc/pki/akmods-keys/private/private_key.priv | gh secret set AKMODS_PRIVKEY --repo maciej-makowski/silverblue-43-xps15
+   sudo base64 -w0 /etc/pki/akmods/certs/public_key.der | gh secret set AKMODS_PUBKEY --repo maciej-makowski/silverblue-43-xps15
+   sudo base64 -w0 /etc/pki/akmods/private/private_key.priv | gh secret set AKMODS_PRIVKEY --repo maciej-makowski/silverblue-43-xps15
    ```
 5. Trigger a rebuild (push to `main` or manually trigger the workflow)
