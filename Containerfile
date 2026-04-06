@@ -34,6 +34,11 @@ RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_
         zsh \
     && rpm-ostree cleanup -m
 
+# Build NVIDIA kernel module (akmods refuses to run as root)
+RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_key.der \
+    --mount=type=secret,id=signing_privkey,dst=/etc/pki/akmods-keys/private/private_key.priv \
+    runuser -u akmods -- akmods --force
+
 # Copy NVIDIA container support systemd units
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
 COPY etc/systemd/system/nvidia-cdi-generate.service /etc/systemd/system/nvidia-cdi-generate.service
