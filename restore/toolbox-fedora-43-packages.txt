@@ -1,8 +1,10 @@
+btop
+code
 gcc
 gcc-c++
+gdb-minimal
 gh
 git
-gdb-minimal
 glx-utils
 golang
 grub2-common
@@ -17,7 +19,6 @@ libkcapi-hasher
 libkcapi-hmaccalc
 libwayland-server
 make
-memstrace
 neovim
 nvidia-modprobe
 nvidia-settings
@@ -25,6 +26,7 @@ onedrive
 opencl-filesystem
 os-prober
 pciutils
+pigz
 podman
 python3-argcomplete
 python3-charset-normalizer
@@ -46,5 +48,6 @@ rpmfusion-nonfree-release
 tmux
 tpm2-tools
 tpm2-tss-fapi
-zig-srpm-macros
+xrandr
 zsh
+zstd
