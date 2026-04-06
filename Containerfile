@@ -38,7 +38,7 @@ RUN --mount=type=secret,id=signing_pubkey,dst=/etc/pki/akmods-keys/certs/public_
         xorg-x11-drv-nvidia-cuda \
         nvidia-settings \
         libva-nvidia-driver \
-    && rpm -ivh --noscripts /tmp/nvidia-rpms/*.rpm \
+    && rpm -ivh --noscripts --nodeps /tmp/nvidia-rpms/*.rpm \
     && runuser -u akmods -- akmods --force \
     && rm -rf /tmp/nvidia-rpms
 
