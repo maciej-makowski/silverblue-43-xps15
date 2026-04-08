@@ -100,7 +100,7 @@ cd silverblue-43-xps15
 ## Step 8: Configure toolbox
 
 ```bash
-toolbox run git config --global user.name <your name>
+toolbox run git config --global user.name "<your name>"
 toolbox run git config --global user.email "<your email>"
 toolbox run gh auth login
 ```
