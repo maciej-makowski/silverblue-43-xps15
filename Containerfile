@@ -78,10 +78,10 @@ RUN dnf download --resolve --destdir=/tmp/nvidia-rpms \
 COPY etc/systemd/system/nvidia-container-fix.service /etc/systemd/system/nvidia-container-fix.service
 COPY etc/systemd/system/nvidia-cdi-generate.service /etc/systemd/system/nvidia-cdi-generate.service
 COPY etc/systemd/system/nvidia-cdi-generate.timer /etc/systemd/system/nvidia-cdi-generate.timer
-COPY opt/systemd/nvidia-container-fix.sh /opt/systemd/nvidia-container-fix.sh
+COPY usr/libexec/nvidia-container-fix.sh /usr/libexec/nvidia-container-fix.sh
 
 # Enable the NVIDIA services
-RUN chmod +x /opt/systemd/nvidia-container-fix.sh \
+RUN chmod +x /usr/libexec/nvidia-container-fix.sh \
     && systemctl enable nvidia-container-fix.service \
     && systemctl enable nvidia-cdi-generate.service \
     && systemctl enable nvidia-cdi-generate.timer
