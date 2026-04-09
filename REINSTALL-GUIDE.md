@@ -53,6 +53,17 @@ sudo systemd-cryptenroll /dev/<luks-partition> --wipe-slot=tpm2 --tpm2-device=au
 
 ```bash
 rpm-ostree rebase ostree-unverified-registry:ghcr.io/maciej-makowski/silverblue-43-xps15:latest
+```
+
+Blacklist nouveau so it doesn't claim the GPU before the NVIDIA driver:
+
+```bash
+rpm-ostree kargs --append=rd.driver.blacklist=nouveau --append=modprobe.blacklist=nouveau
+```
+
+Reboot:
+
+```bash
 systemctl reboot
 ```
 
@@ -62,11 +73,12 @@ systemctl reboot
 nvidia-smi
 ```
 
-If it fails, check `dmesg | grep nvidia`. If the CDI spec is stale:
-
-```bash
-sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
-```
+If it shows "couldn't communicate with the NVIDIA driver":
+- Check `sudo dmesg | grep nvidia` — if you see "No NVIDIA devices probed", the nouveau blacklist kargs may be missing
+- If the CDI spec is stale (container GPU errors):
+  ```bash
+  sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml
+  ```
 
 ## Step 5: Restore home directory
 
