@@ -1,12 +1,11 @@
 name: Build Silverblue Image
 
 on:
-  schedule:
-    - cron: '0 5 * * 0'
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -40,13 +39,13 @@ jobs:
             .
 
       - name: Push image
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         run: |
           podman push ghcr.io/${{ github.repository }}:latest
           podman push ghcr.io/${{ github.repository }}:${{ steps.tag.outputs.date }}
 
       - name: Clean up old versions
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         run: |
           PACKAGE="silverblue-43-xps15"
           KEEP=4
